@@ -2,7 +2,9 @@
 Delay for Trigger
 
 For researches about synchronisation we need a delay for drum triggering with 1ms resolution and delays of 10seconds ore more.
-This is the first working example of our researches.
+This is the first working example of our researches. It uses serial communication for adjustment of delay. 
+The code is great for very long delays but not so for many trigger events.
+We handle now a queue of 512 trigger events in a 2k ringbuffer.
 TODO:
 substitute the 512x4Byte Ringbuffer to 1024x2Byte (handle overflow from 50days to 1minute)
-better debounce of INPUT (max input frequency is now 5Hz)
+better debounce of INPUTs (max input frequency is now 5Hz - 50Hz are better)
