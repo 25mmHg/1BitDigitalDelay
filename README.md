@@ -1,7 +1,7 @@
 # 1BitDigitalDelay
 Delay for Trigger
 
-For researches about synchronisation we need a delay for drum triggering with 1ms resolution and delays of 10seconds ore more.
+For researches about synchronisation we need a delay for drum triggering with 1ms resolution and delays of 10 seconds or more.
 This is the first working example of our researches. It uses serial communication for adjustment of delay. 
 The code is great for very long delays but not so for many trigger events. The prozessing time for values is about 20us without code optimization.
 We handle now a queue of 512 trigger events in a 2k ringbuffer.
