@@ -1,21 +1,30 @@
 /*******************Digitaldelay for DRUM trigger***********************
-     If Button is pressed, you got an 1ms trigger event in realtime
-       and also you got a second 1ms trigger event with delay.
-    The delayTime is set via the USB2serial interface of the ATmega32U4.
-      The queue holds 512 trigger events with maximum delay of 60s.
-                    The resolution is 1ms.
-                         by 25mmHg
-                         Have fun!
+If the INPUT got a LOW edge, the code generate an 1ms trigger event in 
+     realtime and also a second 1ms trigger event with delay.
+      The delayTime is adjusted using the ATmega32U4-USB-interface.
+               The ringbuffer holds 512 trigger events. 
+                 The maximum delay is limited by 60s.
+                      The resolution is 1ms.
+                           by 25mmHg
+                           Have fun!
+
+                         Version 1.02
+                    faster port operations
+                samplingrate ca.100kHz possible                        
+                         Version 1.01
+            button debounce logic is much faster (5ms)
+                         Version 1.00
+                first working needs optimation
  ***********************************************************************/
 
 #define MAXDELAYTIME 60000
 #define MAXARRAYSIZE 512
-#define PRELLTIME 200
+#define BOUNCETIME 5
 
-#define INBUTTON MOSI
-#define OUTDELAY MISO
-#define OUTNOOOW LED_BUILTIN
-#define DEBUGPIN PD6
+#define INBUTTON PB2 //MOSI
+#define OUTDELAY PB3 //MISO
+#define OUTNOOOW PC7 //D13
+#define DEBUGPIN PD6 //D12
 #define DEBUGMODE
 #define SERIALDEBUG
 
@@ -48,12 +57,12 @@ void initUSB2serial() {
 }
 
 void initPins() {
-  pinMode(INBUTTON, INPUT_PULLUP);
-  pinMode(OUTDELAY, OUTPUT);
-  pinMode(OUTNOOOW, OUTPUT);
+  DDRB &= ~(1 << INBUTTON);
+  PORTB |= (1 << INBUTTON);
+  DDRB |=  (1 << OUTDELAY);
+  DDRC |=  (1 << OUTNOOOW);
 #ifdef DEBUGMODE
-  //pinMode(DEBUGPIN, OUTPUT);
-  DDRD |= 1<<PD6;
+  DDRD |=  (1 << DEBUGPIN);
 #endif
 }
 
@@ -95,24 +104,25 @@ void setNewDelayTime() {
 }
 
 void triggerNow(boolean val) {
-  digitalWrite(OUTNOOOW, val);
+  val ? PORTC |= (1 << OUTNOOOW) : PORTC &= ~(1 << OUTNOOOW);
 }
 
-void triggerDelay(boolean val) {
-  digitalWrite(OUTDELAY, val);
+void triggerDel(boolean val) {
+  val ? PORTB |= (1 << OUTDELAY) : PORTB &= ~(1 << OUTDELAY);
 }
 
 boolean getButton() {
   static int counter;
   static boolean lastButton;
-  if (!digitalRead(INBUTTON) && counter == 0) {
-    counter = PRELLTIME;
-    lastButton = true;
+  static boolean newButton;
+  lastButton = newButton;
+  newButton = !(PINB & (1 << INBUTTON));
+  if (newButton  && !lastButton && counter == 0) {
+    counter = BOUNCETIME;
     return (true);
   }
   else {
     counter > 0 ? counter-- : counter = 0;
-    lastButton = false;
     return (false);
   }
 }
@@ -167,7 +177,7 @@ void loop() {
     }
     else triggerNow(false);
     // Test 4 Delay
-    triggerDelay(readTimeStamps());
+    triggerDel(readTimeStamps());
     // end of your code, to run every millisecond
     /**********************************************/
 
